@@ -2,8 +2,6 @@
 "Movie Mate" is a web application that solves 'choice paralysis' problem. A user selects a movie they like, and the system instantly recommends five similar movies based on their content (genre, plot, cast, etc.), simplifying the discovery process.
 
 
-Here’s a polished and styled `README.md` in Markdown format for your project **Your Movie Mate**. It includes setup instructions, data processing steps, model saving, and GUI integration.
-
 ---
 
 # 🎬 Your Movie Mate
