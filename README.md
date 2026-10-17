@@ -1,175 +1,61 @@
-# Movie-recommendation-System
-"Movie Mate" is a web application that solves 'choice paralysis' problem. A user selects a movie they like, and the system instantly recommends five similar movies based on their content (genre, plot, cast, etc.), simplifying the discovery process.
+# Movie Mate: content-based movie recommender
 
+Pick a movie you like and Movie Mate suggests five similar titles, using only the movies' own metadata: overview, genres, keywords, top-billed cast and director from the TMDB 5000 dataset. Streamlit front end, scikit-learn underneath.
 
----
+## How it works
 
-# 🎬 Your Movie Mate
+1. **Prepare the data** (`prepare_data.ipynb`). Merge `tmdb_5000_movies.csv` and `tmdb_5000_credits.csv` on title, drop the three movies with no overview, parse the JSON-like `genres`, `keywords`, `cast` (top three) and `crew` (director) columns, collapse multi-word names into single tokens (`Sam Worthington` becomes `samworthington`, so first names do not match across people), join them with the overview into one `tags` string per movie, lower-case it and stem every word with NLTK's PorterStemmer (which is why `nltk` is in `requirements.txt`).
+2. **Vectorise.** `CountVectorizer(max_features=5000, stop_words="english")` turns each `tags` string into a bag-of-words vector.
+3. **Measure similarity.** Cosine similarity between every pair of movies gives a square matrix over the roughly 4,800 movies, saved with pickle as `similarity.pkl` next to the movie list `movie_dict.pkl`.
+4. **Recommend** (`recommender.py`). Look up the selected title's row, sort the other movies by similarity and return the top five. The lookup is by row position: an earlier version used the DataFrame index label as the row number, which pointed at the wrong similarity row for every title after the three movies dropped during cleaning (and raised `IndexError` for the last three). The Streamlit app (`apps.py`) wraps this in a searchable select box and a results panel.
 
-Your Movie Mate is a content-based movie recommendation system powered by TMDB movie metadata. It analyzes movie features like cast, crew, genres, and keywords to suggest similar titles based on your selection. With a simple GUI, it's your personal movie companion!
+## Project structure
 
----
+| Path | Purpose |
+|---|---|
+| `apps.py` | Streamlit user interface |
+| `recommender.py` | `recommend()` and `load_artifacts()`, used by the app, plus `build_similarity()`, a small re-implementation of the notebook's CountVectorizer step (without stemming) so the tests can build a catalogue without the dataset |
+| `tests/test_recommender.py` | pytest suite covering the edge cases listed below |
+| `prepare_data.ipynb` | Data preparation and artifact generation |
+| `requirements.txt`, `requirements-dev.txt` | Runtime and test dependencies |
 
-## 📁 Dataset
+## Setup
 
-Download the following datasets from Kaggle:
-
-🔗 [TMDB Movie Metadata Dataset](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata/data)
-
-Place these files in your project directory:
-
-- `tmdb_5000_movies.csv`
-- `tmdb_5000_credits.csv`
-
----
-
-## ⚙️ Setup & Preprocessing
-
-Create a Python file (e.g., `main.py`) and follow these steps:
-
-### 1. 📦 Import Libraries
-
-```python
-import pandas as pd
-import numpy as np
-import ast
-import pickle
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-```
-
-### 2. 📥 Load Datasets
-
-```python
-movies = pd.read_csv('tmdb_5000_movies.csv')
-credits = pd.read_csv('tmdb_5000_credits.csv')
-```
-
-### 3. 🔗 Merge Datasets
-
-```python
-movies = movies.merge(credits, on='title')
-```
-
-### 4. 🧹 Select & Clean Features
-
-```python
-movies = movies[['movie_id', 'title', 'overview', 'genres', 'keywords', 'cast', 'crew']]
-```
-
-### 5. 🔍 Parse JSON-like Columns
-
-```python
-def convert(obj):
-    return [i['name'] for i in ast.literal_eval(obj)]
-
-movies['genres'] = movies['genres'].apply(convert)
-movies['keywords'] = movies['keywords'].apply(convert)
-
-def convert_cast(obj):
-    return [i['name'] for i in ast.literal_eval(obj)[:3]]
-
-movies['cast'] = movies['cast'].apply(convert_cast)
-
-def fetch_director(obj):
-    for i in ast.literal_eval(obj):
-        if i['job'] == 'Director':
-            return i['name']
-    return ''
-
-movies['crew'] = movies['crew'].apply(fetch_director)
-```
-
-### 6. 🧠 Create Tags Feature
-
-```python
-movies['overview'] = movies['overview'].apply(lambda x: x.split())
-movies['crew'] = movies['crew'].apply(lambda x: [x])
-movies['tags'] = movies['overview'] + movies['genres'] + movies['keywords'] + movies['cast'] + movies['crew']
-new_df = movies[['movie_id', 'title', 'tags']]
-new_df['tags'] = new_df['tags'].apply(lambda x: " ".join(x).lower())
-```
-
-### 7. 📊 Vectorization & Similarity
-
-```python
-cv = CountVectorizer(max_features=5000, stop_words='english')
-vectors = cv.fit_transform(new_df['tags']).toarray()
-similarity = cosine_similarity(vectors)
-```
-
-### 8. 💾 Save Model with Pickle
-
-```python
-pickle.dump(new_df.to_dict(), open('movie_dict.pkl', 'wb'))
-pickle.dump(similarity, open('similarity.pkl', 'wb'))
-```
-
----
-
-## 🖥️ GUI Integration
-
-Create a file named `apps.py` and use the saved `.pkl` files to build a simple GUI. You can use `streamlit`, `tkinter`, or `flask` depending on your preference.
-
-### Example with Streamlit:
-
-```python
-import streamlit as st
-import pickle
-
-movie_dict = pickle.load(open('movie_dict.pkl', 'rb'))
-similarity = pickle.load(open('similarity.pkl', 'rb'))
-
-movies = list(movie_dict['title'].values())
-
-def recommend(movie):
-    index = movies.index(movie)
-    distances = similarity[index]
-    movie_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
-    return [movies[i[0]] for i in movie_list]
-
-st.title("🎬 Your Movie Mate")
-selected_movie = st.selectbox("Choose a movie", movies)
-
-if st.button("Recommend"):
-    recommendations = recommend(selected_movie)
-    st.write("You might also like:")
-    for title in recommendations:
-        st.write(f"👉 {title}")
-```
-
----
-
-## 🚀 Run the App
+1. Download the [TMDB 5000 Movie Dataset](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata/data) from Kaggle and place `tmdb_5000_movies.csv` and `tmdb_5000_credits.csv` in the project folder.
+2. Run `prepare_data.ipynb` to create `movie_dict.pkl` and `similarity.pkl`. They are git-ignored because the similarity matrix is roughly 180 MB.
+3. Install and run:
 
 ```bash
+pip install -r requirements.txt
 streamlit run apps.py
 ```
 
----
-
-## ✅ Features
-
-- Content-based filtering using cast, crew, genres, keywords, and overview
-- Cosine similarity for recommendations
-- GUI for interactive movie selection
-- Pickle-based model persistence
-
----
-
-## 📌 Requirements
-
-Install dependencies using:
+## Tests
 
 ```bash
-pip install pandas numpy scikit-learn streamlit
+pip install -r requirements-dev.txt
+pytest
 ```
 
----
+The tests build a five-movie synthetic catalogue, so they run in a couple of seconds without the dataset (most of that is importing scikit-learn). They check that:
 
-## 🧠 Credits
+- the selected movie's own row is never in its recommendations;
+- the most similar movie is ranked first, and results are in descending similarity order;
+- an unknown title raises a `ValueError` with a clear message (which `apps.py` shows as an error box rather than a traceback);
+- `k` larger than the catalogue returns everything else, with no padding or duplicates;
+- a movie with empty metadata gets an all-zero similarity row, produces no NaN scores, is never the first recommendation, and asking for recommendations for it raises a clear error instead of returning arbitrary titles;
+- duplicate titles resolve to the first matching row;
+- a DataFrame whose index labels differ from the row positions still maps to the correct similarity row (the lookup is positional, so dropping rows during cleaning cannot shift the results);
+- `load_artifacts()` reads the notebook's pickles (a dict whose index labels have gaps) back into a table whose positions line up with the matrix, and rejects mismatched sizes and empty or corrupt files;
+- an empty list of movies, or a catalogue in which every movie's tags are empty, is rejected with a clear message.
 
-- Dataset: [TMDB on Kaggle](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata)
-- Developed by: *Aditya Gupta*
+## Known limitations
 
----
+- Recommendations are only as good as the tags. Movies with short overviews or missing cast data get weaker matches, and a movie whose tags share no words with any other movie gets no recommendations at all (the app says so instead of listing arbitrary titles).
+- Three TMDB titles belong to two different films each. Because the data is merged on `title`, each of them appears four times in the catalogue, twice paired with the other film's cast and director; the first matching row wins when you search by title, and the other film with the same name can show up among the results. Merging on the TMDB id instead would fix this.
+- Bag-of-words ignores word order and synonyms. TF-IDF weighting or sentence embeddings would be the next step.
+
+## Credits
+
+- Dataset: [TMDB 5000 Movie Dataset on Kaggle](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata)
+- Developed by Aditya Gupta
