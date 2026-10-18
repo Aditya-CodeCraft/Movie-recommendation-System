@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from recommender import build_similarity, load_artifacts, recommend
+from recommender import build_similarity, google_search_url, load_artifacts, recommend
 
 # Two clear clusters (space films, romances) plus one movie with no usable metadata.
 CATALOGUE = {
@@ -139,3 +139,19 @@ def test_load_artifacts_reports_an_empty_or_corrupt_pickle(tmp_path):
     (tmp_path / "similarity.pkl").write_bytes(b"")
     with pytest.raises(ValueError, match="empty or corrupt"):
         load_artifacts(tmp_path)
+
+
+def test_google_search_url_encodes_spaces_and_appends_movie():
+    assert google_search_url("The Dark Knight") == "https://www.google.com/search?q=The+Dark+Knight+movie"
+
+
+@pytest.mark.parametrize(
+    "title, encoded",
+    [
+        ("Galaxy War & Peace", "Galaxy+War+%26+Peace"),
+        ("<Script> Kiddies", "%3CScript%3E+Kiddies"),
+        ("Amélie's Space Trip", "Am%C3%A9lie%27s+Space+Trip"),
+    ],
+)
+def test_google_search_url_percent_encodes_special_characters(title, encoded):
+    assert google_search_url(title) == f"https://www.google.com/search?q={encoded}+movie"

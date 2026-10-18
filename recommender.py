@@ -8,6 +8,7 @@ from __future__ import annotations
 import pickle
 from pathlib import Path
 from typing import Sequence
+from urllib.parse import quote_plus
 
 import numpy as np
 import pandas as pd
@@ -87,3 +88,12 @@ def load_artifacts(directory: str | Path = ".") -> tuple[pd.DataFrame, np.ndarra
     if len(movies) != similarity.shape[0]:
         raise ValueError("movie_dict.pkl and similarity.pkl have different numbers of movies")
     return movies, similarity
+
+
+def google_search_url(title: str) -> str:
+    """Return a Google search URL for "<title> movie", with the query URL-encoded.
+
+    Spaces become "+" and characters such as "&", "<", apostrophes and accented letters are percent-encoded, so any
+    title produces a single valid query string.
+    """
+    return f"https://www.google.com/search?q={quote_plus(title + ' movie')}"

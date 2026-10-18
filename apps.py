@@ -1,11 +1,10 @@
 """Movie Mate: Streamlit front end for the content-based recommender in recommender.py."""
 from html import escape
 from pathlib import Path
-from urllib.parse import quote_plus
 
 import streamlit as st
 
-from recommender import load_artifacts, recommend
+from recommender import google_search_url, load_artifacts, recommend
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -82,7 +81,7 @@ if selected_movie_name:
         )
         with st.container(border=True):
             for i, name in enumerate(names, start=1):
-                google_url = f"https://www.google.com/search?q={quote_plus(name + ' movie')}"
+                google_url = google_search_url(name)
                 st.markdown(
                     f'<div class="mm-rec"><a href="{escape(google_url)}" target="_blank" rel="noopener" '
                     f'title="Search Google for {escape(name)}">&nbsp; {i}. {escape(name)}{link_icon}</a></div>',
