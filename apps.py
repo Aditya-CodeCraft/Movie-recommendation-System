@@ -64,13 +64,14 @@ if selected_movie_name:
 
         st.subheader("Here are your top recommendations:")
 
-        # Streamlit's own heading anchor only jumps within the page, so draw the hover link ourselves: it opens a
-        # Google search for the movie in a new tab.
+        # Streamlit's own heading anchor only jumps within the page, so draw the row ourselves: the title and a link
+        # icon that appears on hover both open a Google search for the movie in a new tab.
         st.markdown(
             """<style>
             .mm-rec { font-size: 1.5rem; font-weight: 600; line-height: 1.2; padding: 0.75rem 0 1rem; }
-            .mm-rec a { opacity: 0; margin-left: 0.5rem; color: inherit; vertical-align: middle; transition: opacity 0.15s; }
-            .mm-rec:hover a, .mm-rec a:focus { opacity: 1; }
+            .mm-rec a, .mm-rec a:hover { color: inherit; text-decoration: none; }
+            .mm-rec svg { opacity: 0; margin-left: 0.5rem; vertical-align: middle; transition: opacity 0.15s; }
+            .mm-rec:hover svg, .mm-rec a:focus svg { opacity: 1; }
             </style>""",
             unsafe_allow_html=True,
         )
@@ -83,9 +84,8 @@ if selected_movie_name:
             for i, name in enumerate(names, start=1):
                 google_url = f"https://www.google.com/search?q={quote_plus(name + ' movie')}"
                 st.markdown(
-                    f'<div class="mm-rec">&nbsp; {i}. {escape(name)}'
-                    f'<a href="{escape(google_url)}" target="_blank" rel="noopener" '
-                    f'title="Search Google for {escape(name)}">{link_icon}</a></div>',
+                    f'<div class="mm-rec"><a href="{escape(google_url)}" target="_blank" rel="noopener" '
+                    f'title="Search Google for {escape(name)}">&nbsp; {i}. {escape(name)}{link_icon}</a></div>',
                     unsafe_allow_html=True,
                 )
 
