@@ -8,13 +8,14 @@ Pick a movie you like and Movie Mate suggests five similar titles, using only th
 2. **Vectorise.** `CountVectorizer(max_features=5000, stop_words="english")` turns each `tags` string into a bag-of-words vector.
 3. **Measure similarity.** Cosine similarity between every pair of movies gives a square matrix over the roughly 4,800 movies, saved with pickle as `similarity.pkl` next to the movie list `movie_dict.pkl`.
 4. **Recommend** (`recommender.py`). Look up the selected title's row, sort the other movies by similarity and return the top five. The lookup is by row position: an earlier version used the DataFrame index label as the row number, which pointed at the wrong similarity row for every title after the three movies dropped during cleaning (and raised `IndexError` for the last three). The Streamlit app (`apps.py`) wraps this in a searchable select box and a results panel.
+5. **Look a movie up.** Each recommended title is a link that opens a Google search for that movie in a new tab, and a link icon appears when you hover over it. `google_search_url()` in `recommender.py` builds the URL; titles are HTML-escaped on the page and URL-encoded in the query, so names with `&`, `<`, apostrophes or accents display and link correctly.
 
 ## Project structure
 
 | Path | Purpose |
 |---|---|
 | `apps.py` | Streamlit user interface |
-| `recommender.py` | `recommend()` and `load_artifacts()`, used by the app, plus `build_similarity()`, a small re-implementation of the notebook's CountVectorizer step (without stemming) so the tests can build a catalogue without the dataset |
+| `recommender.py` | `recommend()`, `load_artifacts()` and `google_search_url()`, used by the app, plus `build_similarity()`, a small re-implementation of the notebook's CountVectorizer step (without stemming) so the tests can build a catalogue without the dataset |
 | `tests/test_recommender.py` | pytest suite covering the edge cases listed below |
 | `prepare_data.ipynb` | Data preparation and artifact generation |
 | `requirements.txt`, `requirements-dev.txt` | Runtime and test dependencies |
@@ -48,6 +49,7 @@ The tests build a five-movie synthetic catalogue, so they run in a couple of sec
 - a DataFrame whose index labels differ from the row positions still maps to the correct similarity row (the lookup is positional, so dropping rows during cleaning cannot shift the results);
 - `load_artifacts()` reads the notebook's pickles (a dict whose index labels have gaps) back into a table whose positions line up with the matrix, and rejects mismatched sizes and empty or corrupt files;
 - an empty list of movies, or a catalogue in which every movie's tags are empty, is rejected with a clear message.
+- `google_search_url()` encodes spaces, `&`, `<`, apostrophes and accented letters correctly.
 
 ## Known limitations
 
