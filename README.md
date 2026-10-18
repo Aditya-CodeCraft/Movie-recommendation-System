@@ -1,5 +1,7 @@
 # Movie Mate: content-based movie recommender
 
+[![tests](https://github.com/Aditya-CodeCraft/Movie-recommendation-System/actions/workflows/tests.yml/badge.svg)](https://github.com/Aditya-CodeCraft/Movie-recommendation-System/actions/workflows/tests.yml)
+
 Pick a movie you like and Movie Mate suggests five similar titles, using only the movies' own metadata: overview, genres, keywords, top-billed cast and director from the TMDB 5000 dataset. Streamlit front end, scikit-learn underneath.
 
 ## How it works
